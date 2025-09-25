@@ -25,7 +25,7 @@ int main() {
             if (e.type == sf::Event::Closed)
                 window.close();
         }
-
+        // ”правление
         if (Keyboard::isKeyPressed(Keyboard::Up))
             ship.move(0, -speed);
         if (Keyboard::isKeyPressed(Keyboard::Down))
