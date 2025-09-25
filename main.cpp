@@ -4,6 +4,7 @@
 using namespace sf;
 
 int main() {
+    setlocale(LC_ALL, "RU");
     int windowWidth = 800, windowHeight = 600;
     RenderWindow window(sf::VideoMode(800, 600), "Sprite test");
 
@@ -35,7 +36,7 @@ int main() {
         if (Keyboard::isKeyPressed(Keyboard::Right))
             ship.move(speed, 0);
 
-
+        // Границы окна
         FloatRect bounds = ship.getGlobalBounds();
 
         if (bounds.left < 0)
