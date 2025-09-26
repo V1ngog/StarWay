@@ -1,45 +1,72 @@
-#include <SFML/Graphics.hpp>
+п»ї#include <SFML/Graphics.hpp>
 #include <windows.h>
 #include <vector>
 #include <cstdlib>
 #include <ctime>
-#include <algorithm>
+
 using namespace sf;
 
-// Функция для сброса игры
-void resetGame(Sprite& ship, std::vector<Sprite>& asteroids, Clock& spawnClock, const Texture& ShipTexture) {
+// Р¤СѓРЅРєС†РёСЏ РґР»СЏ СЃР±СЂРѕСЃР° РёРіСЂС‹
+void resetGame(Sprite& ship, 
+                std::vector<Sprite>& asteroids,
+                Clock& spawnClock,
+                Clock& timeSpawnAsteroidClock,
+                Clock& timeScore, 
+                const Texture& ShipTexture, 
+                int& score,
+                Text& scoreText) {
+
     ship.setPosition(400.f, 300.f);
     asteroids.clear();
     spawnClock.restart();
+    timeSpawnAsteroidClock.restart();
+    timeScore.restart();
+    score = 0;
+
+    scoreText.setString("Score: " + std::to_string(score));
+    FloatRect textBounds = scoreText.getLocalBounds();
+    scoreText.setPosition(800.f - textBounds.width - 10.f, 10.f);
 }
 
 int main() {
     setlocale(LC_ALL, "RU");
 
-    int windowWidth = 800, windowHeight = 600;
+    int windowWidth = 800, windowHeight = 600, score = 0;
     RenderWindow window(VideoMode(windowWidth, windowHeight), "Sprite test");
     window.setFramerateLimit(60);
 
     srand(static_cast<unsigned>(time(0)));
 
-    // Загрузка текстур
+    // Р—Р°РіСЂСѓР·РєР° С‚РµРєСЃС‚СѓСЂ
     Texture ShipTexture;
     if (!ShipTexture.loadFromFile("image/ship.png")) {
-        MessageBox(NULL, L"Не удалось загрузить картинку корабля!", L"Ошибка", MB_OK | MB_ICONERROR);
+        MessageBox(NULL, L"РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РєР°СЂС‚РёРЅРєСѓ РєРѕСЂР°Р±Р»СЏ!", L"РћС€РёР±РєР°", MB_OK | MB_ICONERROR);
         return -1;
     }
 
     Texture BackgroundTexture;
     if (!BackgroundTexture.loadFromFile("image/background.png")) {
-        MessageBox(NULL, L"Не удалось загрузить картинку фона!", L"Ошибка", MB_OK | MB_ICONERROR);
+        MessageBox(NULL, L"РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РєР°СЂС‚РёРЅРєСѓ С„РѕРЅР°!", L"РћС€РёР±РєР°", MB_OK | MB_ICONERROR);
         return -1;
     }
 
     Texture asteroidTexture;
     if (!asteroidTexture.loadFromFile("image/asteroid.png")) {
-        MessageBox(NULL, L"Не удалось загрузить картинку астероида!", L"Ошибка", MB_OK | MB_ICONERROR);
+        MessageBox(NULL, L"РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РєР°СЂС‚РёРЅРєСѓ Р°СЃС‚РµСЂРѕРёРґР°!", L"РћС€РёР±РєР°", MB_OK | MB_ICONERROR);
         return -1;
     }
+
+    Font MyFont;
+    if (!MyFont.loadFromFile("font/myfont.ttf")) {
+        MessageBox(NULL, L"РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РєР°СЂС‚РёРЅРєСѓ Р°СЃС‚РµСЂРѕРёРґР°!", L"РћС€РёР±РєР°", MB_OK | MB_ICONERROR);
+        return -1;
+    }
+
+    Text scoreText;
+    scoreText.setFont(MyFont);
+    scoreText.setString("Score: " + std::to_string(score));
+    scoreText.setCharacterSize(24);
+    scoreText.setFillColor(sf::Color::White);
 
     Sprite background(BackgroundTexture);
     background.setScale(
@@ -54,8 +81,8 @@ int main() {
 
     float speed = 5.f;
     std::vector<Sprite> asteroids;
-    Clock spawnClock;
-
+    Clock spawnClock, timeSpawnAsteroidClock, timeScore;
+    float timeSpawnAsteroid = 1.f;
     bool gameOver = false;
 
     while (window.isOpen()) {
@@ -66,21 +93,22 @@ int main() {
         }
 
         if (!gameOver) {
-            // Управление кораблём
+            // РЈРїСЂР°РІР»РµРЅРёРµ РєРѕСЂР°Р±Р»С‘Рј
             if (Keyboard::isKeyPressed(Keyboard::Up)) ship.move(0, -speed);
             if (Keyboard::isKeyPressed(Keyboard::Down)) ship.move(0, speed);
             if (Keyboard::isKeyPressed(Keyboard::Left)) ship.move(-speed, 0);
             if (Keyboard::isKeyPressed(Keyboard::Right)) ship.move(speed, 0);
 
-            // Границы окна
+            // Р“СЂР°РЅРёС†С‹ РѕРєРЅР°
             FloatRect bounds = ship.getGlobalBounds();
             if (bounds.left < 0) ship.setPosition(bounds.width / 2.f, ship.getPosition().y);
             if (bounds.left + bounds.width > windowWidth) ship.setPosition(windowWidth - bounds.width / 2.f, ship.getPosition().y);
             if (bounds.top < 0) ship.setPosition(ship.getPosition().x, bounds.height / 2.f);
             if (bounds.top + bounds.height > windowHeight) ship.setPosition(ship.getPosition().x, windowHeight - bounds.height / 2.f);
 
-            // Спавн астероидов
-            if (spawnClock.getElapsedTime().asSeconds() > 0.5f) {
+
+            // РЎРїР°РІРЅ Р°СЃС‚РµСЂРѕРёРґРѕРІ
+            if (spawnClock.getElapsedTime().asSeconds() > timeSpawnAsteroid) {
                 Sprite asteroid(asteroidTexture);
                 float scale = 0.15f + static_cast<float>(rand()) / RAND_MAX * 0.1f;
                 asteroid.setScale(scale, scale);
@@ -97,7 +125,14 @@ int main() {
                 spawnClock.restart();
             }
 
-            // Движение астероидов
+            if (timeSpawnAsteroidClock.getElapsedTime().asSeconds() > 10.f) {
+                if (timeSpawnAsteroid > 0.3) {
+                    timeSpawnAsteroid -= 0.1f;
+                    timeSpawnAsteroidClock.restart();
+                }
+            }
+
+            // Р”РІРёР¶РµРЅРёРµ Р°СЃС‚РµСЂРѕРёРґРѕРІ
             for (auto& a : asteroids) a.move(-5.f, 0.f);
 
             asteroids.erase(
@@ -106,27 +141,53 @@ int main() {
                 asteroids.end()
             );
 
-            // Проверка столкновений
+            // РџСЂРѕРІРµСЂРєР° СЃС‚РѕР»РєРЅРѕРІРµРЅРёР№
             for (auto& a : asteroids) {
                 if (ship.getGlobalBounds().intersects(a.getGlobalBounds())) {
                     gameOver = true;
                     break;
                 }
             }
+
+            // РџРѕР»СѓС‡Р°РµРј СЂР°Р·РјРµСЂ С‚РµРєСЃС‚Р°
+            FloatRect textBounds = scoreText.getLocalBounds();
+
+            // РЎС‚Р°РІРёРј РїРѕР·РёС†РёСЋ РІ РїСЂР°РІС‹Р№ РІРµСЂС…РЅРёР№ СѓРіРѕР»
+            scoreText.setPosition(
+                800.f - textBounds.width - 10.f, // РѕРєРЅРѕ С€РёСЂРёРЅРѕР№ 800 в†’ РѕС‚РЅРёРјР°РµРј С€РёСЂРёРЅСѓ С‚РµРєСЃС‚Р° Рё РЅРµР±РѕР»СЊС€РѕР№ РѕС‚СЃС‚СѓРї
+                10.f                             // 10 РїРёРєСЃРµР»РµР№ РѕС‚ РІРµСЂС…РЅРµРіРѕ РєСЂР°СЏ
+            );
+
+            if (timeScore.getElapsedTime().asSeconds() > 1.f) {
+                score += 100;
+                scoreText.setString("Score: " + std::to_string(score));
+                FloatRect textBounds = scoreText.getLocalBounds();
+                scoreText.setPosition(800.f - textBounds.width - 10.f, 10.f);
+                timeScore.restart();
+            }
         }
 
-        // Рендер
+        // Р РµРЅРґРµСЂ
         window.clear();
         window.draw(background);
         window.draw(ship);
+        window.draw(scoreText);
         for (auto& a : asteroids) window.draw(a);
         window.display();
 
-        // Если столкновение, показываем окно и сбрасываем игру
+        // Р•СЃР»Рё СЃС‚РѕР»РєРЅРѕРІРµРЅРёРµ, РїРѕРєР°Р·С‹РІР°РµРј РѕРєРЅРѕ Рё СЃР±СЂР°СЃС‹РІР°РµРј РёРіСЂСѓ
         if (gameOver) {
-            int result = MessageBox(NULL, L"Вы столкнулись! Начать заново?", L"Game Over", MB_OKCANCEL | MB_ICONEXCLAMATION);
+            int result = MessageBox(NULL, L"Р’С‹ СЃС‚РѕР»РєРЅСѓР»РёСЃСЊ! РќР°С‡Р°С‚СЊ Р·Р°РЅРѕРІРѕ?", L"Game Over", MB_OKCANCEL | MB_ICONEXCLAMATION);
             if (result == IDOK) {
-                resetGame(ship, asteroids, spawnClock, ShipTexture);
+                resetGame(ship,
+                        asteroids,
+                        spawnClock,
+                        timeSpawnAsteroidClock,
+                        timeScore,
+                        ShipTexture,
+                        score,
+                        scoreText);
+
                 gameOver = false;
             }
             else {
