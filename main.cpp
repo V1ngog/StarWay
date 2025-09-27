@@ -7,7 +7,7 @@
 using namespace sf;
 
 // Функция для сброса игры
-void resetGame(Sprite& ship, 
+void static resetGame(Sprite& ship, 
                 std::vector<Sprite>& asteroids,
                 Clock& spawnClock,
                 Clock& timeSpawnAsteroidClock,
@@ -31,8 +31,9 @@ void resetGame(Sprite& ship,
 int main() {
     setlocale(LC_ALL, "RU");
 
-    int windowWidth = 800, windowHeight = 600, score = 0;
-    RenderWindow window(VideoMode(windowWidth, windowHeight), "Sprite test");
+    const int WINDOW_WIDTH = 800, WINDOW_HEIGHT = 600;
+    int score = 0;
+    RenderWindow window(VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Star Way");
     window.setFramerateLimit(60);
 
     srand(static_cast<unsigned>(time(0)));
@@ -70,8 +71,8 @@ int main() {
 
     Sprite background(BackgroundTexture);
     background.setScale(
-        windowWidth / static_cast<float>(BackgroundTexture.getSize().x),
-        windowHeight / static_cast<float>(BackgroundTexture.getSize().y)
+        WINDOW_WIDTH / static_cast<float>(BackgroundTexture.getSize().x),
+        WINDOW_HEIGHT / static_cast<float>(BackgroundTexture.getSize().y)
     );
 
     Sprite ship(ShipTexture);
@@ -102,9 +103,9 @@ int main() {
             // Границы окна
             FloatRect bounds = ship.getGlobalBounds();
             if (bounds.left < 0) ship.setPosition(bounds.width / 2.f, ship.getPosition().y);
-            if (bounds.left + bounds.width > windowWidth) ship.setPosition(windowWidth - bounds.width / 2.f, ship.getPosition().y);
+            if (bounds.left + bounds.width > WINDOW_WIDTH) ship.setPosition(WINDOW_WIDTH - bounds.width / 2.f, ship.getPosition().y);
             if (bounds.top < 0) ship.setPosition(ship.getPosition().x, bounds.height / 2.f);
-            if (bounds.top + bounds.height > windowHeight) ship.setPosition(ship.getPosition().x, windowHeight - bounds.height / 2.f);
+            if (bounds.top + bounds.height > WINDOW_HEIGHT) ship.setPosition(ship.getPosition().x, WINDOW_HEIGHT - bounds.height / 2.f);
 
 
             // Спавн астероидов
@@ -115,12 +116,12 @@ int main() {
                 FloatRect localBounds = asteroid.getLocalBounds();
                 asteroid.setOrigin(localBounds.width / 2.f, localBounds.height / 2.f);
 
-                float posY = static_cast<float>(rand() % windowHeight);
+                float posY = static_cast<float>(rand() % WINDOW_HEIGHT);
                 float halfHeight = (localBounds.height * scale) / 2.f;
                 if (posY < halfHeight) posY = halfHeight;
-                if (posY > windowHeight - halfHeight) posY = windowHeight - halfHeight;
+                if (posY > WINDOW_HEIGHT - halfHeight) posY = WINDOW_HEIGHT - halfHeight;
 
-                asteroid.setPosition(windowWidth + (localBounds.width * scale) / 2.f, posY);
+                asteroid.setPosition(WINDOW_WIDTH + (localBounds.width * scale) / 2.f, posY);
                 asteroids.push_back(asteroid);
                 spawnClock.restart();
             }
@@ -154,7 +155,7 @@ int main() {
 
             // Ставим позицию в правый верхний угол
             scoreText.setPosition(
-                800.f - textBounds.width - 10.f, // окно шириной 800 → отнимаем ширину текста и небольшой отступ
+                WINDOW_WIDTH - textBounds.width - 10.f, // окно шириной 800 → отнимаем ширину текста и небольшой отступ
                 10.f                             // 10 пикселей от верхнего края
             );
 
